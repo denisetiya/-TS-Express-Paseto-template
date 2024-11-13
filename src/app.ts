@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import url from "./url";
-import { authenticateJWT } from "./middleware/jwt.auth";
+import authenticateToken from "./middleware/jwt.auth";
 import response from "./utils/response.api";
 import { limiter, blockIPMiddleware } from "./middleware/rete.limiter";
 
@@ -14,7 +14,7 @@ app.use(limiter);
 
 app.use(express.json());
 
-app.use("/v1/",authenticateJWT, url);
+app.use("/v1/", authenticateToken, url);
 
 
 
