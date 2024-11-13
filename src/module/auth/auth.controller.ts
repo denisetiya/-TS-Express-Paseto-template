@@ -58,7 +58,7 @@ auth.post("/auth", async(req: Request, res: Response) => {
 });
 */
 
-// Login route dengan rate limiting
+
 auth.post("/login", validateAuthInput, async(req: Request, res: Response) => {
     const { email, password } = req.body;
 
