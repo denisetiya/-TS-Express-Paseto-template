@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import url from "./url";
-import authenticateToken from "./middleware/jwt.auth";
+import authenticateToken from "./middleware/paseto.auth";
 import response from "./utils/response.api";
 import { limiter, blockIPMiddleware } from "./middleware/rete.limiter";
 

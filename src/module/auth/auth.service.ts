@@ -3,6 +3,7 @@ import prisma from '../../config/prisma.config';
 import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
 import { KeyObject, createPrivateKey, createPublicKey, generateKeyPairSync } from 'crypto';
+import { platform } from 'os';
 dotenv.config();
 
 // Generate Ed25519 keypair jika tidak ada di environment
@@ -48,6 +49,7 @@ if (process.env.PRIVATE_KEY && process.env.PUBLIC_KEY) {
 // Interface untuk payload token
 interface TokenPayload {
     id: string;
+    token?: object;
     email: string;
     exp: string;
     type: 'access' | 'refresh';
@@ -145,37 +147,52 @@ const isTokenExpired = (expirationTime: string): boolean => {
 
 
 export const verifyAccessToken = async (token: string, refresh:string): Promise<TokenPayload> => {
+   
 
     try {
         const payload = await V4.verify<TokenPayload>(token, publicKey);
-        
-        if (!payload.exp) {
-            throw new Error("Token has no expired information");
-        }
 
-        
 
-        if (isTokenExpired(payload.exp.toString())) {
-            if (refresh) {
+        if (!payload) {
+            const payloadRefresh = await V4.verify<TokenPayload>(refresh, publicKey);
+            if (!payloadRefresh) {
+                throw new Error("Token verification failed");
+            }
+        
+            if (payloadRefresh.type !== 'refresh') {
+                throw new Error("Invalid type token type");
+            }
+        
+            if (isTokenExpired(payloadRefresh.exp.toString())) {
                 const newTokens = await refreshAccessToken(refresh);
                 return {
-                    id: payload.id,
-                    email: payload.email,
+                    id: payloadRefresh.id,
+                    email: payloadRefresh.email,
+                    token: {
+                        accessToken: newTokens.accessToken,
+                        refreshToken: newTokens.refreshToken,
+                    },
                     exp: newTokens.expires,
                     type: 'access'
                 };
             }
-            throw new Error("Access token has expired");
+            throw new Error("Refresh token has expired");
         }
-
+        
+        if (!payload.exp) {
+            throw new Error("Token has no expired information");
+        }
+        
         if (payload.type !== 'access') {
             throw new Error("Invalid type token type");
         }
-
+        
         return payload;
+
     } catch (error) {
         if (error instanceof Error) {
             throw new Error(`Verification of Access Tokens Failed: ${error.message}`);
+            
         }
         throw new Error("Verification of Access Tokens Failed");
     }
